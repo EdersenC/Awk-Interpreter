@@ -8,6 +8,8 @@ import java.util.OptionalLong;
 import lex.OperationNode.operation;
 import lex.Token.tokenType;
 
+import javax.swing.text.html.Option;
+
 public class Parser {
 	
 	
@@ -229,9 +231,13 @@ public void printT(Token.tokenType t){
 		}
 		return null;
 	}
-	
 
-	public Optional<Node> parseStatement() throws ParserException {
+
+	public boolean isStatementNode(Optional<Node> node){
+        return node.get() instanceof StatementNode;
+    }
+
+	public Optional<StatementNode> parseStatement() throws ParserException {
 		Token.tokenType IF = Token.tokenType.IF;
 		Token.tokenType Continue = Token.tokenType.CONTINUE;
 		Token.tokenType Break = Token.tokenType.BREAK;
@@ -251,7 +257,7 @@ public void printT(Token.tokenType t){
 			return parseBreak();
 		}
 		if(blockHandler.MatchAndRemove(IF).isPresent()) {
-			return parseIF(empty);
+			return parseIF(Optional.empty());
 		}
 		if(blockHandler.MatchAndRemove(For).isPresent()) {
 			return parseFor();
@@ -269,17 +275,25 @@ public void printT(Token.tokenType t){
 			return parseReturn();
 		}
 
-		return parseOperation();
-	}
+		Optional<Node> op = parseOperation();
+		if(op.isPresent()) {
+			if (op.get().getType() == operation.POSTINC)
+				return Optional.of(new quickStatementNode(op.get().getNode(), op.get().getType()));
+			if (op.get() instanceof StatementNode)
+				return op.map(node -> (StatementNode) node);
+			throw new ParserException("Expected Statement Node but got: " + op.get().getValue());
+		}
+		return Optional.empty();
+    }
 
 	
 		//48 min(with Redundancy) 
 	public BlockNode parseBlock(Optional<Node> condition) throws ParserException {
 		TokenManaglinked blockHandler = this.handler;
-		LinkedList<Optional<Node>> stat = new LinkedList<Optional<Node>>();
+		LinkedList<Optional<StatementNode>> stat = new LinkedList<Optional<StatementNode>>();
 		Token.tokenType leftC = Token.tokenType.LEFT_CURLY_BRACE;
 		Token.tokenType rightC = Token.tokenType.RIGHT_CURLY_BRACE;
-		Optional<Node> statements;
+		Optional<StatementNode> statements;
 		//look for open if not their throw Exception: 
 		if(blockHandler.MatchAndRemove(leftC).isPresent()) {
 		while(acceptSeparators());
@@ -314,7 +328,7 @@ public void printT(Token.tokenType t){
 	}
 	
 	
-	public Optional<Node> parseIF(Optional<Node> nextIF) throws ParserException {
+	public Optional<StatementNode> parseIF(Optional<StatementNode> nextIF) throws ParserException {
 		TokenManaglinked IF = this.handler;
 		//LinkedList<Optional<Token>> Operation;
 		Optional<Node> operation;
@@ -324,7 +338,7 @@ public void printT(Token.tokenType t){
 		Token.tokenType rightPar = Token.tokenType.RIGHT_PARENTHESIS;
 		Token.tokenType iff = Token.tokenType.IF;
 		Token.tokenType Else = Token.tokenType.ELSE;
-		Optional<Node> next = nextIF;
+		Optional<StatementNode> next = nextIF;
 			while(acceptSeparators());
 			//Look for open parent get Operation
 			if(IF.MatchAndRemove(leftPar).isPresent()) {
@@ -347,13 +361,12 @@ public void printT(Token.tokenType t){
 			}
 			System.out.print("This is Left At ParseIF():"+ nextIF );
 			return next;
-			
 		}
 	
 	
 
 	//47 min.
-	public Optional<Node> parseFor() throws ParserException{
+	public Optional<StatementNode> parseFor() throws ParserException{
 		Token.tokenType leftPar = Token.tokenType.LEFT_PARENTHESIS;
 		Token.tokenType rightPar = Token.tokenType.RIGHT_PARENTHESIS;
 		Token.tokenType in = Token.tokenType.IN;
@@ -361,33 +374,48 @@ public void printT(Token.tokenType t){
 		Optional<Node> blocked;
 		Optional<Node> statements;
 		int counter = 0;
-		
-		Optional<Node> empty = Optional.empty();
-		
-		
-		
+		Optional empty = Optional.empty();
+		LinkedList<Optional<Node>> operations = new LinkedList<Optional<Node>>();
+
+
+
+
+
+
+
+
+
+
 		if(handler.MatchAndRemove(leftPar).isPresent()) {
 			while(acceptSeparators());
-		while(get_NextType(counter)!=in) {
+		while(get_NextType(counter)!= in) {
+
 			if(get_NextType(counter)==rightPar) {
 				// if inside means its a ;; for
-				operation = parseOperation();
+				for(int i = 0; i<3; i++){
+					while(acceptSeparators());
+					operations.add(parseOperation());
+				}
 				if(handler.MatchAndRemove(rightPar).isPresent()) {
 					blocked = Optional.of(parseBlock(empty));
 					while(acceptSeparators());
-					return Optional.of(new forNode(operation,blocked));
+					return Optional.of(new forNode(operations,blocked));
 				}
 			}
+
 			counter++;
 		}
-		
+
+
+
 		operation = parseOperation();
-		
 		// if outside means its a foreach
 		blocked = Optional.of(parseBlock(empty));
 		return Optional.of(new forEachNode(operation,blocked));
 		}
-		
+
+
+
 		return empty;
 	}
 	
@@ -395,11 +423,12 @@ public void printT(Token.tokenType t){
 	
 
 	//20 min.
-	public Optional<Node> parseDelete() throws ParserException{
+	public Optional<StatementNode> parseDelete() throws ParserException{
 		Token.tokenType leftB = Token.tokenType.LEFT_SQUARE_BRACKET;
 		Token.tokenType rightB = Token.tokenType.RIGHT_SQUARE_BRACKET;
 		Token.tokenType word = Token.tokenType.WORDS;
-		Optional<Node> empty = Optional.empty();
+		Optional empty = Optional.empty();
+
 		Optional<Node> operation = parseOperation();
 		if(operation.isPresent())
 			return Optional.of(new DeleteNode(operation));
@@ -407,27 +436,20 @@ public void printT(Token.tokenType t){
 	}
 	
 	//20min
-	public Optional<Node> parseWhile(int type) throws ParserException{
+	public Optional<StatementNode> parseWhile(int type) throws ParserException{
 		Optional<Node> empty = Optional.empty();
 		Token.tokenType leftPar = Token.tokenType.LEFT_PARENTHESIS;
 		Token.tokenType rightPar = Token.tokenType.RIGHT_PARENTHESIS;
 		Token.tokenType While = Token.tokenType.WHILE;
 		LinkedList<Optional<Node>> params = new LinkedList<Optional<Node>>();
 		Optional<Node> operation;
-		Optional<Node> blocked;
+		BlockNode blocked;
 		if(type == 0) {
 			operation = parseParenthesis(0).getFirst();
 			return Optional.of(new WhileNode(operation,Optional.of(parseBlock(empty))));
 		}
-		
-		
-		
-		
 			// in this section means DoWhile
-			blocked = Optional.of(parseBlock(empty));
-			
-			
-			
+			blocked = parseBlock(empty);
 			if(handler.MatchAndRemove(While).isEmpty())
 				throw new unExpectedElement("\n Error Occurred During Parsing.    Expected:  {"+While+"} But the Current Item is:  "+handler.peek(0)); 
 			while(acceptSeparators());
@@ -493,15 +515,15 @@ public void printT(Token.tokenType t){
 	
 	
 	
-	public Optional<Node> parseReturn()throws ParserException{
+	public Optional<StatementNode> parseReturn()throws ParserException{
 		return Optional.of(new ReturnNode(parseOperation()));
 	}
 	
-	public Optional<Node> parseContinue(){
+	public Optional<StatementNode> parseContinue(){
 		return Optional.of(new ContinueNode());
 	}
 	
-	public Optional<Node> parseBreak(){
+	public Optional<StatementNode> parseBreak(){
 		return Optional.of(new BreakNode());
 	}
 	
@@ -782,14 +804,14 @@ public void printT(Token.tokenType t){
 		System.out.print("\n\n Here at PostOP()  "+handler);
 		if(handler.MatchAndRemove(incr).isPresent()) {
 			System.out.print("\n At PostOP() after incr:  "+bottomLvl.get().getValue());
-			return Optional.of( new OperationNode(bottomLvl, operation.POSTINC)); 
+			return Optional.of( new OperationNode(bottomLvl, operation.POSTINC));
 		}
 		if(handler.MatchAndRemove(decr).isPresent()) {
 			System.out.print("\n At PostOP() after decr:  "+bottomLvl.get().getValue());
 			return Optional.of( new OperationNode(bottomLvl, operation.POSTDEC)); 
 		}
 		System.out.print("\n At the end Of PostOP(): "+bottomLvl);
-		return Optional.empty();
+		return Optional.of(bottomLvl.get());
 	}
 	
 	
@@ -1164,7 +1186,7 @@ public Optional<Node> parseTernary(Optional<Node> bottomLvl, Node left) throws P
 		Node Operation;
 		if(BottomLvl.isPresent()) {
 			Optional<Node> postOp = postOp(BottomLvl);
-			Optional<Node> ParseExp =  parseExponents(BottomLvl,null);
+			Optional<Node> ParseExp =  parseExponents(BottomLvl,postOp.get());
 			Optional<Node> basicMath = parseBasicMath(BottomLvl,ParseExp.get());
 			Optional<Node> parseBoolCom = parseBoolCom(BottomLvl);
 			Optional<Node> parseArrayMembers = parseArrayMembers(BottomLvl,basicMath.get());
@@ -1175,9 +1197,9 @@ public Optional<Node> parseTernary(Optional<Node> bottomLvl, Node left) throws P
 			
 			//((2*x)^2)-20
 
-		if(postOp.isPresent()) {
-			System.out.print("\n\ncurrently at postOp() which returend a value:  "+postOp);
-			return postOp;}
+//		if(postOp.isPresent()) {
+//			System.out.print("\n\ncurrently at postOp() which returend a value:  "+postOp);
+//			return postOp;}
 		if(parseBoolCom.isPresent()) {
 			System.out.print("\n\ncurrently at parseBoolCom which returend a value:  "+parseBoolCom);
 			return parseBoolCom;}

@@ -6,10 +6,10 @@ import java.util.Optional;
 import lex.OperationNode.operation;
 
 public class BlockNode extends Node {
-    private LinkedList<Optional<Node>> statements;
+    private LinkedList<Optional<StatementNode>> statements;
     private Optional<Node> condition;
 
-    public BlockNode(LinkedList<Optional<Node>> statements, Optional<Node> condition) {
+    public BlockNode(LinkedList<Optional<StatementNode>> statements, Optional<Node> condition) {
         this.statements = statements;
         this.condition = condition; 
     }
@@ -18,22 +18,20 @@ public class BlockNode extends Node {
     
      
     
-    public void addStatments(Optional<Node> statement) {
+    public void addStatments(Optional<StatementNode> statement) {
     	
     	this.statements.add(statement);
     }
     
     
     
-    public LinkedList<Optional<Node>> getStatements() {
+    public LinkedList<Optional<StatementNode>> getStatements() {
     	return this.statements;
     }
     
     
     
     public String toString() {
-    	
-    	
     	return "Current Block Comdtition : "+this.condition
     		  +"\nBlock Body: { "+getStatements()+" }";
     }

@@ -11,10 +11,10 @@ import lex.OperationNode.operation;
     class  FunctionDefinitionNode extends Node {
     private String name;
     private LinkedList<String> parameters;
-    private LinkedList<Optional<Node>> body;
+    private LinkedList<Optional<StatementNode>> body;
     
 
-    public FunctionDefinitionNode(String name,  LinkedList<String> parameters, LinkedList<Optional<Node>> body) {
+    public FunctionDefinitionNode(String name,  LinkedList<String> parameters, LinkedList<Optional<StatementNode>> body) {
 
     	this.name = name;
         this.parameters = parameters;

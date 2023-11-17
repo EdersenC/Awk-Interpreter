@@ -1,21 +1,14 @@
 package lex;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.regex.Matcher;
 
 import lex.OperationNode.operation;
 import lex.ReturnType.RType;
-import lex.Token.tokenType;
 
 public class Interpreter {
 
@@ -69,25 +62,16 @@ public class Interpreter {
 	
 	
 	
-	public InterpreterDataType varOperations(HashMap<String, InterpreterDataType> map, String string ,boolean condition) {
+	public InterpreterDataType varOperations(HashMap<String, InterpreterDataType> map, String string ,boolean condition,InterpreterDataType newData) throws NotFound {
 		HashMap<String, InterpreterDataType> varHolder = Global;
-		InterpreterDataType swap;
 		if(!map.isEmpty())
 			varHolder = map;
 		// if in map swp will now be, the Var it founds vaule
-	
-		
-		
-		
-		
-		if(varHolder.containsKey(string))
-			swap = varHolder.get(string);
-		
-			
-			
-		
-			
-	return null;
+		if(!varHolder.containsKey(string))
+			throw new NotFound(string,"0");
+		if(condition)
+			varHolder.replace(string, newData);
+	return varHolder.get(string);
 	}
 	
 	public InterpreterDataType VariableReferenceNode(Node currentNode,HashMap<String, InterpreterDataType> localVar) throws ParserException {
@@ -101,7 +85,7 @@ public class Interpreter {
 			
 		}
 		if(currentNode.getRight().isEmpty()) {
-			return varOperations(varHolder,nodeVal,false);
+			return varOperations(varHolder,nodeVal,false,new InterpreterDataType());
 		}
 		String index = getIDT(currentNode.getRight().get(),varHolder).getDataType();
 		//InterpreterDataType results = getIDT(currentNode.getRight().get(),varHolder);
@@ -109,7 +93,7 @@ public class Interpreter {
 			InterpreterDataType var = varHolder.get(nodeVal);
 			if(!(var instanceof InterpreterArrayDataType ))
 				throw new  unExpectedElement("\n Not an InterpreterArrayDataType");
-			if(var.hasVariable(index));
+			if(var.hasVariable(index))
 				return var.getVariable(index);
 		}
 		throw new  unExpectedElement("\n Both Global and Local Varibles failed to retrive A varible:   "+nodeVal);
@@ -118,9 +102,9 @@ public class Interpreter {
 
 	
 	public InterpreterDataType boolComapare(String c1, operation op, String c2) {
-		
-		
-		
+
+
+
 		Float compare1,compare2;
 		StringBuilder builder = new StringBuilder();
 		try {
@@ -134,14 +118,14 @@ public class Interpreter {
         	if(op.equals(operation.LE))
         		return new InterpreterDataType(builder.append(c1.compareTo(c2)<= 0).toString());
         	if(op.equals(operation.LT))
-        		return new InterpreterDataType(builder.append(c1.compareTo(c2)< 0).toString());
+        		return new InterpreterDataType(builder.append(c1.compareTo(c2)<0).toString());
         	if(op.equals(operation.GE))
         		return new InterpreterDataType(builder.append(c1.compareTo(c2)>= 0).toString());
         	if(op.equals(operation.GT))
         		return new InterpreterDataType(builder.append(c1.compareTo(c2)> 0).toString());
         	return new InterpreterDataType();
         }
-		
+
 		if(op.equals(operation.EQ))
             return new InterpreterDataType(builder.append(compare1.equals(compare2)).toString());
     	if(op.equals(operation.NE))
@@ -261,8 +245,9 @@ public class Interpreter {
 	public InterpreterDataType InterpretInc(Node node, operation op, HashMap<String, InterpreterDataType> localVar) throws ParserException {
 		InterpreterDataType left =  getIDT(node,localVar);
 		Float leftM = getFloat(left.getDataType());
+System.out.print("\n\n  this is the node in inc  "+node+"   "+op+"   "+localVar+"   "+leftM+"   \n\n");
 	if(op.equals(operation.PREINC)||op.equals(operation.POSTINC))
-		return new InterpreterDataType( String.valueOf(++leftM));
+		return varOperations(localVar,node.getValue(),true,new InterpreterDataType(String.valueOf(++leftM)));
 	if(op.equals(operation.PREDEC)||op.equals(operation.POSTDEC))
 		return new InterpreterDataType(String.valueOf(--leftM));
 	if(op.equals(operation.UNARYPOS))
@@ -270,7 +255,7 @@ public class Interpreter {
 	if(op.equals(operation.UNARYNEG))
 		return new InterpreterDataType(String.valueOf(leftM--));
 	
-		return new InterpreterDataType();
+	return new InterpreterDataType();
 	}
 	
 	
@@ -280,8 +265,7 @@ public class Interpreter {
 	
 	public InterpreterDataType OperationNode(Node currentNode,HashMap<String, InterpreterDataType> localVar) throws ParserException {
 		HashMap<String, InterpreterDataType> varHolder = Global;
-		
-		
+
 		if(localVar!=null);
 			varHolder = localVar;
 		if(isNodePresent(currentNode,-1)){//left<0
@@ -291,19 +275,20 @@ public class Interpreter {
 		operation op = currentNode.getType();
 		InterpreterDataType leftIDT =  getIDT(left, varHolder);
 		if(!isNodePresent(currentNode,1)){// right>0
-			InterpreterDataType incResults =InterpretInc(currentNode.getNode().get(),op,varHolder);
-			return incResults ;
+
 		}
 		Node right = currentNode.getRight().get();
 
 		InterpreterDataType rightIDT =  getIDT(right, varHolder);
 //		float leftM = getFloat(leftIDT.getDataType());
 //		float rightM = getFloat(rightIDT.getDataType());
+
 		InterpreterDataType mathResults =  interpreteBasicMath(currentNode,varHolder);
-		InterpreterDataType boolComResults =  boolComapare(currentNode.getValue(),op,rightIDT.getDataType());
+		InterpreterDataType boolComResults =  boolComapare(leftIDT.getDataType(),op,rightIDT.getDataType());
 		String calc = boolOps(leftIDT.getDataType(),op,rightIDT.getDataType());
 		System.out.print(mathResults.getDataType());
-		
+
+
 		if(!(mathResults.isEmpty()))
 			return mathResults;
 		if(!(boolComResults.isEmpty()))
@@ -328,7 +313,10 @@ public class Interpreter {
 	
 	public InterpreterDataType getIDT(Node currentNode,HashMap<String, InterpreterDataType> localVar)throws ParserException {
 		Node left = currentNode;
-		
+	System.out.println("\n This is the current node: "+currentNode);
+		if(currentNode instanceof AssigmentNode) {
+			return assingmentNode(currentNode, localVar);
+		}
 		if(currentNode instanceof Constant) {
 			return new InterpreterDataType(left.getValue());
 		}
@@ -344,29 +332,28 @@ public class Interpreter {
 			return VariableReferenceNode(currentNode,localVar);
 		if(currentNode instanceof OperationNode)
 			return OperationNode(currentNode,localVar);
-					
 		return new InterpreterDataType();
 	}
 	
 	
 	
-	public Optional<Node> matchAndRemove(int type) {
-		LinkedList<BlockNode> deBlocker = awk.actionBlocks;
-		LinkedList<Optional<Node>> holder = deBlocker.get(0).getStatements();
-		Optional<Node> matches = Optional.empty();
-			 holder = deBlocker.get(0).getStatements();
-			 if(holder.isEmpty())
-				 return Optional.empty();
-			 if(type==0) {
-			 if(holder.getFirst() .get() instanceof AssigmentNode ) {
-				 System.out.print("\n\n\n"+holder.getFirst().get()+" MATCHES CLASS ASSIGMENTNODE     ");
-				 return holder.pollFirst();
-			 }
-			 
-			 }
-		
-		return Optional.empty();
-	}
+//	public Optional<Node> matchAndRemove(int type) {
+//		LinkedList<BlockNode> deBlocker = awk.actionBlocks;
+//		LinkedList<Optional<StatementNode>> holder = deBlocker.get(0).getStatements();
+//		Optional<Node> matches = Optional.empty();
+//			 holder = deBlocker.get(0).getStatements();
+//			 if(holder.isEmpty())
+//				 return Optional.empty();
+//			 if(type==0) {
+//			 if(holder.getFirst() .get() instanceof AssigmentNode ) {
+//				 System.out.print("\n\n\n"+holder.getFirst().get()+" MATCHES CLASS ASSIGMENTNODE     ");
+//				 return holder.pollFirst();
+//			 }
+//
+//			 }
+//
+//		return Optional.empty();
+//	}
 	
 
 	
@@ -406,41 +393,50 @@ public class Interpreter {
 	// we will use local varibles so this blocks local varible hashmap: maybe just throw around a block hash map
 	// checks each Node and depeding on what it is, we get the resukts with id IDT snd then we add that to the Hash map
 	// Ex: AssingmentNode Checks ProgramNode if there return result, if not maybe we can just pass 
-	public HashMap<String, InterpreterDataType> assingmentNode(Node currentNode ,HashMap<String, InterpreterDataType> localVar ) throws ParserException {
+	public InterpreterDataType assingmentNode(Node currentNode , HashMap<String, InterpreterDataType> localVar ) throws ParserException {
 		HashMap<String, InterpreterDataType> varHolder = Global;
 		if(localVar!=null);
 			varHolder = localVar;
 		if(isNodePresent(currentNode,0))
 			throw new  unExpectedElement("\nInterpreter The Node value is null");
 		if(isNodePresent(currentNode,-1))
-			return varHolder;
+			return new InterpreterDataType();
 	
 		Node left =  currentNode.getLeft();
 		String target = left.getValue();
 		
-		if(!((left instanceof VariableReferenceNode)||( left instanceof OperationNode && left.getValue()=="$")) )
+		if(!((left instanceof VariableReferenceNode)||( left instanceof OperationNode && Objects.equals(left.getValue(), "$"))) )
 			throw new unExpectedElement("\n Error Occurred During Parsing.    Expected:  { VariableRefrenceNode Or Operation Dolloar} But the Current Item is:  "+currentNode);
 		if(left.getRight().isEmpty());
 			//throw new unExpectedElement("\n Error Occurred During Parsing.    Expected:  {No Value for Target} But the Current Item is:  "+currentNode);
 		InterpreterDataType value =  getIDT(currentNode.getRight().get(),varHolder);
-		
+
 		if(varHolder.containsKey(target))
 			varHolder.replace(target,value);
 		varHolder.put(target,value);
-		
-		return varHolder;
+
+		return new InterpreterDataType(value.getDataType());
 		}
 
-	
+	public ReturnType ProccessForNode(StatementNode statement,HashMap<String, InterpreterDataType> localVar ){
+
+	if(statement.getNode().get()!=null) {
+		return ProccessForNode(statement, localVar);
+	}
+
+
+
+	return new ReturnType(RType.NONE);
+	}
 	public ReturnType ProccessDowhileNode(HashMap<String, InterpreterDataType> localVar, StatementNode statement) throws ParserException {
 		do {
-			ReturnType statementList = interpretListOfStatements(null, localVar);
+			ReturnType statementList = interpretListOfStatements(statement.getBlock().getStatements(), localVar);
 			if(statementList.getRType()== RType.RETURN)
-				return processStatement(localVar, statement);
+				return statementList;
 			if(statementList.getRType()== RType.BREAK)
 				break;
-			
-		}while((getIDT(statement, localVar).getDataType()).equals("True"));
+			System.out.print("\n\n Holla This is local Var"+localVar.toString());
+		}while((getIDT(statement.getNode().get(), localVar).getDataType()).equals("true"));
 		
 		return new ReturnType(RType.NONE);
 	}
@@ -452,15 +448,22 @@ public class Interpreter {
 	
 
 	public ReturnType processStatement(HashMap<String, InterpreterDataType> localVar, StatementNode statement) throws ParserException {
-		
+
+
+		if(statement instanceof AssigmentNode) {
+			return new ReturnType(getIDT(statement,localVar).getDataType(),RType.NONE);
+		}
 		if(statement instanceof BreakNode) {
 			return new ReturnType(RType.BREAK);
 		}
 		if(statement instanceof ContinueNode) {
 			return new ReturnType(RType.CONTINUE);
 		}
+		if(statement instanceof ReturnNode) {
+			return new ReturnType(getIDT(statement.getNode().get(),localVar).getDataType(),RType.RETURN);
+		}
 		if(statement instanceof DeleteNode) {
-			String key = statement.getValue();
+			String key = statement.getNode().get().getValue();
 			if(localVar.containsKey(key)) {
 				localVar.remove(key);
 				return new ReturnType(RType.DELETE);
@@ -469,34 +472,32 @@ public class Interpreter {
 				Global.remove(key);
 				return new ReturnType(RType.DELETE);
 			}
-			throw new NotFound(key);
+			throw new NotFound(key,"0");
 		}
-		
 		if(statement instanceof DoWhileNode ) {
 			return ProccessDowhileNode(localVar, statement);
 		}
-	
+		if(statement instanceof quickStatementNode ) {
+			return new ReturnType(InterpretInc(statement.getNode().get(),statement.getType(),localVar).getDataType(),RType.NONE);
+		}
 
-		return new ReturnType(RType.TEST);
+		return new ReturnType(RType.NONE);
 	}
 	
 	
 	
 	
-	public ReturnType interpretListOfStatements(LinkedList<StatementNode> statements,HashMap<String, InterpreterDataType> localVar) throws ParserException {
+	public ReturnType interpretListOfStatements(LinkedList<Optional<StatementNode>> statements, HashMap<String, InterpreterDataType> localVar) throws ParserException {
 		LinkedList<BlockNode> deBlocker = awk.actionBlocks;
+		ReturnType test = new ReturnType(RType.NONE);
+
 		boolean termanate = false;
 			for(int j = 0; j < statements.size(); j++) {
-				
-				ReturnType test = processStatement(localVar,statements.get(j));
-				if(test.getRType() != RType.NONE);
+				test = processStatement(localVar,statements.get(j).get());
+				if(test.getRType() != RType.NONE)
 					return test;
-				
-					
-					
 		}
-	
-		return new ReturnType(RType.TEST);
+		return test;
 	}
 	
 	
@@ -508,19 +509,12 @@ public class Interpreter {
 		HashMap<String, InterpreterDataType> localVar =  new HashMap<String, InterpreterDataType>();
 		boolean termanate = false;
 		for(int i = 0; i<deBlocker.size();i++) {
-			LinkedList<Optional<Node>> statements = deBlocker.get(i).getStatements();
-			for(int j = 0; j < statements.size(); j++) {
-				HashMap<String, InterpreterDataType> test = assingmentNode(deBlocker.get(i).getStatements().get(j).get(),localVar);
+			LinkedList<Optional<StatementNode>> statements = deBlocker.get(i).getStatements();
+				ReturnType test = interpretListOfStatements(statements,localVar);
 				System.out.println("\n\n"+test.toString());// Full Recursion oneLine.......!!
-				System.out.println("This is the: "+i+" "+deBlocker.get(i)+"\n\n WE ARE DONE");
-			}
-			
+				System.out.println("This is the: "+i+" "+deBlocker.get(i)+"\n\n WE ARE DONE "+localVar.get("h20").getDataType());
 			// 1: Check AssigmentNode : make sure that the target is a variable (variableReferenceNode or OperationNode with type $DOLLAR). 
 		}
-		
-		
-		
-		
 		
 		return null;
 	}
@@ -613,13 +607,12 @@ public class Interpreter {
 			
 			
 			
-			if(builtin[i] == "next"||builtin[i] == "getline") {
+			if(builtin[i].equals("next") || builtin[i].equals("getline")) {
 				arrayData = new InterpreterArrayDataType();
 				data.put(builtin[i], arrayData);
 				functionCall.put(builtin[i], new BuiltInFunctionDefinitionNode(builtin[i],false,
 					    (Function<HashMap<String, InterpreterDataType>, String>) print -> {
-					        StringBuilder builder = new StringBuilder();
-					        return builder.append(handler.SplitAndAssign()).toString(); // Returns the concatenated dataTypes
+							return String.valueOf(handler.SplitAndAssign()); // Returns the concatenated dataTypes
 					    }
 					));
 			}
@@ -738,10 +731,7 @@ public class Interpreter {
 					        	 System.out.print("\n This is field"+field);
 					        }
 					        
-					        
-					        
-					        
-					   
+
 					        if(regex.equals("/[0-9]+/")) {
 					        	for(int n = 0; n< numbers.length; n++) {
 					        		field = field.replaceAll(numbers[n], replace) ;

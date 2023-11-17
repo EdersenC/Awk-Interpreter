@@ -24,10 +24,13 @@ h20= "YOU Win"
 return h20;
 }
 
-
+if(i > 90) {
+h20= "YOU Lose"
+return h20;
+}
 
 i++;
 } while (i < 100)
 
-
+return h20;
 }

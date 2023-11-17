@@ -43,8 +43,8 @@ class ConversionError extends ParserException {
 
 class NotFound extends ParserException {
 
-	public NotFound (String message) {
-		super("Item is not Found: "+message); 
+	public NotFound (String message, String line) {
+		super("No Reference TO:{ "+message.toUpperCase()+" } Found At Line: "+line);
 		// TODO Auto-generated constructor stub
 	}
 		
