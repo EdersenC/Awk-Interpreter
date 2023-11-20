@@ -2,6 +2,7 @@ package lex;
 
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.function.Function;
 
 import lex.OperationNode.operation;
 
@@ -61,12 +62,16 @@ public abstract class StatementNode extends Node {
 
 
 
-class forNode extends StatementNode {
-	private LinkedList<Optional<Node>> operation;
-	private Optional<Node> statements;
+class ForNode extends StatementNode {
+	private Optional<StatementNode> var;
+	private Optional<Node> bool;
+	private Optional<StatementNode> inc;
+	private BlockNode statements;
 	
-	public forNode(LinkedList<Optional<Node>> operation,Optional<Node> statements) {
-		this.operation = operation;
+	public ForNode(Optional<StatementNode> var,Optional<Node> bool,Optional<StatementNode> inc, BlockNode statements) {
+		this.var = var;
+		this.bool = bool;
+		this.inc = inc;
 		this.statements = statements;
 	}
 
@@ -76,12 +81,18 @@ class forNode extends StatementNode {
 		return null;
 	}
 
-	public LinkedList<Optional<Node>> getOperation() {
-		return this.operation;
+	public Optional<StatementNode> getinit() {
+		return var;
+	}
+	public Optional<Node> getbool() {
+		return bool;
+	}
+	public Optional<StatementNode> getinc() {
+		return inc;
 	}
 	@Override
 	public String toString() {
-		return "forNode:  "+"This Operation"+this.operation+" Staments: "+this.statements+" Next forNode";
+		return ("This is ForNode:  Init: %s  BoolCon: %s Inc: %s Statements: %s").formatted(var,bool,inc,statements);
 	}
 
 	@Override
@@ -93,7 +104,7 @@ class forNode extends StatementNode {
 	@Override
 	public Optional<Node> getNode() {
 		// TODO Auto-generated method stub
-		return this.statements;
+		return Optional.empty();
 	}
 
 	/**
@@ -101,7 +112,7 @@ class forNode extends StatementNode {
 	 */
 	@Override
 	public BlockNode getBlock() {
-		return null;
+		return statements;
 	}
 
 
@@ -110,9 +121,9 @@ class forNode extends StatementNode {
 
 class forEachNode extends StatementNode {
 	private Optional<Node> operation;
-	private Optional<Node> statements;
+	private BlockNode statements;
 	
-	public forEachNode(Optional<Node> operation,Optional<Node> statements) {
+	public forEachNode(Optional<Node> operation,BlockNode statements) {
 		this.operation = operation;
 		this.statements = statements;
 	}
@@ -145,7 +156,7 @@ class forEachNode extends StatementNode {
 	 */
 	@Override
 	public BlockNode getBlock() {
-		return null;
+		return statements;
 	}
 
 
@@ -164,7 +175,18 @@ class FunctionCallNode extends StatementNode {
 		this.params  =params;
 		this.function  =function;
 	}
-	
+
+	public String getFunction() {
+		if(function.isPresent()) {
+			return function.get().gettype().toString().toLowerCase();
+		}
+		return "none";
+	}
+
+	public LinkedList<Optional<Node>> getParams() {
+		return params;
+	}
+
 
 
 	public String toString() {
@@ -184,16 +206,32 @@ class FunctionCallNode extends StatementNode {
 
 
 class IfNode extends StatementNode {
-	private Optional<Node> operation;
-	private Optional<Node> statements;
+	private Optional<Node> condition;
+	private BlockNode statements;
 	private Optional<StatementNode> next;
+	private IfNode  pre;
 
-	public IfNode(Optional<Node> operation,Optional<Node> statements,Optional<StatementNode> next) {
+	public IfNode(Optional<Node> condition,BlockNode statements,IfNode pre, Optional<StatementNode> next) {
 		this.next = next;
-		this.operation = operation;
+		this.condition = condition;
 		this.statements = statements;
+		this.pre = pre;
 	}
 
+
+	public Optional<StatementNode> getNext() {
+			return next;
+	}
+	public IfNode getPre() {
+		return pre;
+	}
+
+	public Optional<Node> getCondition() {
+		return condition;
+	}
+	public boolean hasNext() {
+        return next.isPresent();
+    }
 	@Override
 	public String getValue() {
 		// TODO Auto-generated method stub
@@ -202,7 +240,7 @@ class IfNode extends StatementNode {
 
 	@Override
 	public String toString() {
-		return "IFNode:  "+"This Operation"+this.operation+" Staments: "+this.statements+" NextIf Node";
+		return ("IFNode:  Condition: %s Statements: %s Previous IFNode:%s  NextIFNode: %s  ").formatted(condition,statements,getPre(),next);
 	}
 
 	@Override
@@ -213,8 +251,7 @@ class IfNode extends StatementNode {
 
 	@Override
 	public Optional<Node> getNode() {
-		// TODO Auto-generated method stub
-		return Optional.of(this.next.get());
+		return Optional.empty();
 	}
 
 	/**
@@ -222,11 +259,14 @@ class IfNode extends StatementNode {
 	 */
 	@Override
 	public BlockNode getBlock() {
-		return null;
+		return statements;
 	}
 
 
 }
+
+
+
 
 
 
@@ -366,9 +406,9 @@ class DeleteNode extends StatementNode {
 
 class WhileNode extends StatementNode {
 	private Optional<Node> condtion;
-	private Optional<Node> statements;
+	private BlockNode statements;
 
-	public WhileNode(Optional<Node> condtion, Optional<Node> statements ) {
+	public WhileNode(Optional<Node> condtion, BlockNode statements ) {
 		this.condtion = condtion;
 		this.statements = statements;
 
@@ -394,7 +434,7 @@ class WhileNode extends StatementNode {
 	@Override
 	public Optional<Node> getNode() {
 		// TODO Auto-generated method stub
-		return this.statements;
+		return condtion;
 	}
 
 	/**
@@ -402,7 +442,7 @@ class WhileNode extends StatementNode {
 	 */
 	@Override
 	public BlockNode getBlock() {
-		return null;
+		return statements;
 	}
 
 
@@ -446,7 +486,7 @@ class DoWhileNode extends StatementNode {
 @Override
 	public BlockNode getBlock() {
 		// TODO Auto-generated method stub
-		return this.statements;
+		return statements;
 	}
 
 

@@ -1,7 +1,19 @@
 package lex;
 
 
+import java.lang.ref.Reference;
+
 public class ParserException extends Exception {
+
+	enum ErrorType {
+		VARIABLEREFERENCE,
+		PARAMAS
+	}
+
+
+
+
+
     public ParserException(String message) {
         super(message);
     }
@@ -33,7 +45,7 @@ class unExpectedElement extends ParserException {
 class ConversionError extends ParserException {
 
 	public ConversionError (String message) {
-		super("Failed to Convert: "+message); 
+		super("\n Failed to Convert: "+message);
 		// TODO Auto-generated constructor stub
 	}
 		
@@ -42,11 +54,12 @@ class ConversionError extends ParserException {
 
 
 class NotFound extends ParserException {
-
-	public NotFound (String message, String line) {
-		super("No Reference TO:{ "+message.toUpperCase()+" } Found At Line: "+line);
-		// TODO Auto-generated constructor stub
+	public NotFound ( int params, String message , String line) {
+		super(("\n EXPECTED %s Parameters For This Function: { %s } LINE: %s").formatted(params,message,line));
 	}
-		
-	
+	public NotFound (String message, String line) {
+		super(("\n No Reference To: { %s } LINE: %s").formatted(message,line));
+	}
+
+
 }

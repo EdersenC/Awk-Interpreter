@@ -31,7 +31,7 @@ public class ReturnType {
 	}
 	
 	public String toString() {
-		return "This is ReturnType: The Value: "+value+" This is the ReturnType: "+type;
+		return ("This is ReturnType:   Value: %s  Type %s" ).formatted(value, type);
 	}
 	public String getValue() {
 		return value; 

@@ -18,7 +18,7 @@ public abstract Optional<Node> getNode();
 
 
 public Node getLeft() {
-	return null;
+	throw new UnsupportedOperationException("Not supported yet.");
 }
 
 public Optional<Node> getRight() {

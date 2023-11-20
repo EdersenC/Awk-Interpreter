@@ -1,33 +1,27 @@
 
+ {
 
 
 
 
- ##function add_employee(emp_name, emp_salary, emp_department) {
-   ##  department_employees[emp_department] = department_employees[emp_department] emp_name ","
-   ##department_total_salary[emp_department] += emp_salary
-    ##department_employee_count[emp_department]++
-##}
 
 
 
+     cat = 10;
+     bat = 2;
+     soda = 7;
+     result = 78;
+     train = 9999
 
-{
-
-i = 31
-h20 = "edd"
-do {
-
-
-if(i >30) {
-h20= "YOU Win"
-return h20;
-}
+     # Nested if-else
+     if (cat > 5) {
 
 
 
-i++;
-} while (i < 100)
+         print ("water %S");
 
 
-}
+     }
+
+
+ }

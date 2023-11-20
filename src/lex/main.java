@@ -41,8 +41,8 @@ public class main {
 	           terp.handler.SplitAndAssign();
 	           
 	           terp.interpretActionBlock();
-	           
-	           
+				HashMap<String, AwkProgramOut> terper = terp.awkProgramOut;
+	           System.out.println(" n");
 	           
 //	            
 //	           data.put("print",new InterpreterArrayDataType());
